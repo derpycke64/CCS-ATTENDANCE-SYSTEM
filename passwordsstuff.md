@@ -1,2 +1,2 @@
-superadmin olfuSuperAdmin2026!@
-username PASSWORD
+:superadmin olfuSuperAdmin2026!@ 
+:username PASSWORD
