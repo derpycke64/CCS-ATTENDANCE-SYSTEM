@@ -1,0 +1,296 @@
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.portal-main-header {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #ffffff;
+  z-index: 10;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.login-viewport {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  gap: 120px; 
+  padding: 40px;
+  background: 
+    linear-gradient(
+      135deg, 
+      #8c1d1d 49.5%,                  
+      rgba(0, 0, 0, 0.45) 49.5%,     
+      rgba(0, 0, 0, 0.45) 50.5%,    
+      transparent 50.5%               
+    ),
+    url('/olfu-campus.jpg') right center / contain no-repeat; 
+}
+.student-check-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  padding: 16px;
+  box-sizing: border-box;
+  margin: auto;
+}
+.card-section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 12px 0; 
+  letter-spacing: -0.5px;
+  text-align: center;
+  width: 100%;
+  max-width: 400px; 
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  color: white;
+}
+.student-card{
+  margin-top: 20px;
+  width: 100%;
+  background-color: white;
+  max-width: 400px;
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 5px solid #312f2fec;
+  box-sizing: border-box;
+  box-shadow: 0 0px 8px 1px rgb(214, 75, 75);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.student-card::before{
+  content: ""; 
+  position: absolute;
+  inset: 0; 
+  z-index: -1; 
+  background-image: url('/olfu-logo.png');
+  background-size: contain; 
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.15; 
+}
+.gps-status-banner {
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 16px;
+  font-weight: 700;
+  white-space: pre-line;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  background-color: var(--banner-bg);
+  color: var(--banner-text);
+  border: 1px solid var(--banner-border);
+}
+.staff-login-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  padding: 16px;
+  box-sizing: border-box;
+  margin: auto;
+}
+.login-card {
+  margin-top: 20px;
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 24px;
+  border-radius: 16px;
+  border: 5px solid #312f2fec;
+  box-sizing: border-box;
+  box-shadow: 0 0px 8px 1px rgb(214, 75, 75);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.login-card::before{
+  content: ""; 
+  position: absolute;
+  inset: 0; 
+  z-index: -1; 
+  background-image: url('/olfu-logo.png');
+  background-size: contain; 
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.15; 
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #3d0101;
+  margin: 0;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: #3d0101;
+  margin-top: 6px;
+}
+
+.error-banner {
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #3d0101;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background-color: #f9fafb;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.login-input:focus {
+  border-color: #4f46e5;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.login-submit-button {
+  width: 100%;
+  background-color: #4B0000;
+  color: #ffffff;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.login-submit-button:hover {
+  background-color: #3d0101;
+  box-shadow: 0 6px 12px -1px rgba(241, 6, 6, 0.3);
+}
+@media (max-width: 1024px) {
+  .login-viewport {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0px; 
+    padding: 32px 0px 0px 0px; 
+    background: #8c1d1d; 
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden; 
+  }
+
+  
+  .student-check-in, .staff-login-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%; 
+    box-sizing: border-box;
+  }
+
+  .student-check-in {
+    padding: 24px 20px 48px 20px; 
+    background: #8c1d1d;
+  }
+
+  .staff-login-area {
+    padding: 48px 20px 64px 20px; 
+    position: relative;
+    background: url('/olfu-campus.jpg') center center / cover no-repeat;
+  }
+
+ 
+  .staff-login-area::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px; 
+    background-color: rgba(0, 0, 0, 0.45);
+  }
+
+  .student-card, .login-card {
+    margin-top: 12px;
+    width: 100%;
+    max-width: 360px; 
+    padding: 24px 16px; 
+    box-sizing: border-box;
+  }
+
+  .portal-main-header {
+    position: relative;
+    top: 0;
+    left: 0;
+    transform: none;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    color: #ffffff !important;
+    text-align: center;
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+
+  .card-section-title {
+    font-size: 1.3rem; 
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  
+ 
+}

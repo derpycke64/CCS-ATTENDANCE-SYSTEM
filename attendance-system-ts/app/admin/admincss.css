@@ -1,0 +1,314 @@
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  background-color: #f9fafb; 
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+.dashboard-sidebar {
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.main-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.role-badge {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.role-badge span {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8c1d1d;
+}
+
+.tab-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #8c1d1d;
+  padding: 8px;
+  border-radius: 8px;
+  gap: 8px;
+  width: 100%; 
+  box-sizing: border-box;
+}
+
+.tab-button {
+  flex: 1; 
+  padding: 10px 8px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  background-color: transparent;
+  color: #ffffff;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover{
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+} 
+
+.tab-button.active {
+  background-color: #ffffff;
+  color: #8c1d1d;
+}
+
+.tab-button.active:hover{
+  background-color: #dad9d9;
+  color: #8c1d1d;
+}
+
+.dashboard-main-content {
+  padding: 16px;
+}
+
+.main-viewport-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 32px;
+}
+
+.header-desc h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-left: 1em;
+}
+
+.header-action-btn {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.header-action-btn:hover {
+  background-color: #f3f4f6;
+  color: #ef4444;
+  border-color: #f87171;
+}
+
+.superadmin-layout-stack{
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card-panel {
+  background-color: #ffffff;
+  padding: 16px; 
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  
+}
+
+.admin-provisioning-panel {
+  border-top: 4px solid #8c1d1d;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #374151;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.input-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-sizing: border-box;
+  background-color: #f9fafb;
+  outline: none;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.form-input:focus {
+  border-color: #8c1d1d;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(140, 29, 29, 0.1);
+}
+
+.submit-button {
+  width: 100%;
+  background-color: #8c1d1d;
+  color: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.submit-button:hover {
+  background-color: #701616;
+}
+
+.table-wrapper {
+  overflow-x: auto; 
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  background-color: #ffffff;
+  min-width: 500px; 
+}
+
+.table-table th {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.table-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+
+.audit-row-super {
+  border-left: 4px solid #16a34a;
+  background-color: #fafffa;
+}
+
+.audit-row-standard {
+  border-left: 4px solid #8c1d1d;
+  background-color: #fafafa;
+}
+
+.admin-badge-container {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-badge-super {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.admin-badge-standard {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.revoke-access-btn {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.revoke-access-btn:hover {
+  background-color: #dc2626;
+}
+
+.protected-badge {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.student-num-cell {
+  font-family: monospace;
+  color: #8c1d1d;
+  font-weight: 700;
+}
+
+.operator-user-cell {
+  font-weight: 500;
+}
+
+.timestamp-mono-cell {
+  font-family: monospace;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+
+@media (min-width: 768px) {
+  .dashboard-container {
+    padding: 32px;
+  }
+
+  .main-title {
+    font-size: 30px;
+  }
+
+  .tab-container {
+    width: auto; 
+  }
+
+  .tab-button {
+    flex: none;
+    padding: 8px 16px;
+  }
+
+  .card-panel {
+    padding: 24px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+}
