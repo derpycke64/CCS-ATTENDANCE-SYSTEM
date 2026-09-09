@@ -398,6 +398,7 @@ function AdmindashboardContent(){
                                             <th>Description</th>
                                             <th>Radius</th>
                                             <th>Action</th>
+                                            <th>Delete Event</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -420,6 +421,9 @@ function AdmindashboardContent(){
                                                         ) : (
                                                             <button type="button" onClick={() => handleSetActiveEvent(evt.id)} className="submit-button">Set Active</button>
                                                         )}
+                                                    </td>
+                                                     <td>
+                                                        <button type="button" onClick={() => handleDeleteEvent(evt.id)} className="revoke-access-btn">Delete</button>
                                                     </td>
                                                 </tr>
                                             ))
