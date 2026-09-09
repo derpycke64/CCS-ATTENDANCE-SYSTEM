@@ -1,5 +1,6 @@
 'use client';
 
+import {Suspense} from 'react';
 import React, { useEffect, useState } from 'react';
 import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -45,7 +46,7 @@ interface StaffProfilestuff{
     created_at:string;
 }
 export const dynamic = 'force-dynamic';
-export default function Admindashboard(){ 
+function AdmindashboardContent(){ 
 
     const [currentView, setCurrentView] = useState<'Project Overview' | 'Staff Accounts' | 'Events' | 'Monitoring Logs' | 'Settings'>('Project Overview');
     const [roles,setCurrentroles] = useState<'admin' | 'superadmin'>('admin');
@@ -523,6 +524,14 @@ export default function Admindashboard(){
                  )}
             </main>
         </div>
+        
     );
 }
 
+export default function Admindashboard() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading Admin Panel...</div>}>
+      <AdmindashboardContent />
+    </Suspense>
+  );
+}
