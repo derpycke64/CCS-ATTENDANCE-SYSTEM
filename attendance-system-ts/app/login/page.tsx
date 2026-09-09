@@ -150,7 +150,7 @@ export default function LoginPage() {
                 }
             }
             ,() => {
-                setGpsStatus("Unable to retrieve your location");
+                setGpsStatus("Unable to retrieve your location || Check your browser settings and allow location access.");
                 setLoadingGps(false);
             }, {enableHighAccuracy:true}
         );
