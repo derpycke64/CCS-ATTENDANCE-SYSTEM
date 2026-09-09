@@ -1,6 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
 import React, { useEffect, useState } from 'react';
 import { supabase } from "@/lib/supabase";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -45,6 +44,7 @@ interface StaffProfilestuff{
     role:'admin' | 'superadmin';
     created_at:string;
 }
+export const dynamic = 'force-dynamic';
 export default function Admindashboard(){ 
 
     const [currentView, setCurrentView] = useState<'Project Overview' | 'Staff Accounts' | 'Events' | 'Monitoring Logs' | 'Settings'>('Project Overview');
