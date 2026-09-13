@@ -421,7 +421,7 @@ return (
                                         </span>
                                         </td>
                                         <td>
-                                            {account.username !== 'superadmin' ? (
+                                            {account.role !== 'superadmin' ? (
                                                 <button type="button" onClick={() => handleremoveAdmin(account.id, account.username)} className="revoke-access-btn">
                                                 Revoke role Access
                                                 </button>
