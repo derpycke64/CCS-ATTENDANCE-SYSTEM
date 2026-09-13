@@ -29,6 +29,17 @@ export default function LoginPage() {
     const [gpsStatus, setGpsStatus] = useState("Locating ...");
     const [targetevent, setTargetEvent] = useState<Eventstuff | null>(null);
     const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
+    
+    const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+    const [resetEmail, setResetEmail] = useState<string>('');
+    const [successMessage, setSuccessMessage] = useState<string>('');
+    const [formView, setFormView] = useState<'login' | 'forgot' | 'update'>('login');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPass, setShowPass] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
 
     const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
     const gpsBannerStyle = {
@@ -74,8 +85,13 @@ export default function LoginPage() {
     
     const handleStudentCheckIn = async (evnt: React.SubmitEvent<HTMLFormElement>) => {
         evnt.preventDefault();
+       
         if (!studentid || !studentname) {
             return alert('Please fill in required fields');
+        }
+         if (studentid.toString().length !== 11) {
+            window.alert("Validation Error: Your Student ID must be exactly 11 digits long (e.g., 01251111111). Please check your entry and try again.");
+            return;
         }
         if (!gpsVerified || !targetevent) {
             return alert('You are not within the event range or no active event found');
@@ -105,7 +121,44 @@ export default function LoginPage() {
             setStudentName('');
         }
     };
+    const handleRequestReset = async (e: React.SubmitEvent  <HTMLFormElement>) => {
+        e.preventDefault();
+        setSuccessMessage('');
+        
+        // Captures your current absolute URL context origin (e.g., your-app.vercel.app)
+        const redirectToUrl = `${window.location.origin}/reset-password`;
 
+        const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+            redirectTo: redirectToUrl, // Tells Supabase where to send the user after they click the email link
+        });
+
+        if (error) {
+            alert(`Reset Request Failure: ${error.message}`);
+        } else {
+            setSuccessMessage("Check your email! A password reset link has been dispatched to your inbox.");
+            setResetEmail('');
+        }
+    };
+    const handleUpdatePassword = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            return alert("Validation Error: Passwords do not match.");
+        }
+        
+        setIsLoading(true);
+        
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+        if (error) {
+            alert(`Error updating credentials: ${error.message}`);
+        } else {
+            alert("Password updated successfully! Redirecting back to sign in panel...");
+            setNewPassword('');
+            setConfirmPassword('');
+            setFormView('login');
+        }
+        setIsLoading(false);
+        };
     useEffect(() => {
         document.title = "Login | Attendance System"; 
     }, []);
@@ -158,6 +211,18 @@ export default function LoginPage() {
         evaluateStudentRange();
     }, []);
 
+    useEffect(() => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+            setFormView('update');
+            }
+    });
+
+    return () => {
+        subscription.unsubscribe();
+    };
+    }, []);
+
     
 
 return (
@@ -187,7 +252,11 @@ return (
                     <form onSubmit={handleStudentCheckIn} className="input-form" onFocus={() => setActiveSide('left')}>
                         <div className="form-group">
                             <label className="form-label">Student ID</label>
-                            <input type="number" required placeholder="Enter your student ID" className="login-input" value={studentid || ''} onChange={(e) => setStudentId(e.target.value)}/>
+                            <input type="text" inputMode="numeric"maxLength={11} required placeholder="Enter Student ID" className="login-input" value={studentid || ''} 
+                                onChange={(e) => {
+                                    const cleanVal = e.target.value.replace(/\D/g, '');
+                                    setStudentId(cleanVal);
+                                }}/>
                         </div>
                         <div className="form-group">
                             <label className='form-label'>Enter your name</label>
@@ -201,28 +270,106 @@ return (
                 </div>
             </div>
 
-            <div className="content-col content-col-right">
-                <h2 className="side-label">Staff Login</h2>
+           <div className="content-col content-col-right">
+                <h2 className="side-label">Staff Portal</h2>
                 <h2 className="card-section-title">Log in as staff/admin</h2>
                 <div className="login-card">
-                    <div className="login-header">
-                        <h1 className="login-title">Log in</h1>
-                        <p className="login-subtitle">Sign in to manage stuff</p>
-                    </div>
-                    {errormessage && <div className="error-banner">{errormessage}</div>}
-                    <form onSubmit={handlelogin} className="input-form" onFocus={() => setActiveSide('right')}>
-                        <div className="form-group">
-                            <label className="form-label">Email</label>
-                            <input type="email" required placeholder="Enter your email" className="login-input" value={email} onChange={(e) => setEmail(e.target.value)} />
-                        </div>
+                    
+                    {formView === 'login' && (
+                        <>
+                            <div className="login-header">
+                                <h1 className="login-title">Log in</h1>
+                                <p className="login-subtitle">Sign in</p>
+                            </div>
+                            {errormessage && <div className="error-banner">{errormessage}</div>}
+                            
+                            <form onSubmit={handlelogin} className="input-form" onFocus={() => setActiveSide('right')}>
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input type="email" required placeholder="Enter your email" className="login-input" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                </div>
 
-                        <div className="form-group">
-                            <label className="form-label">Password</label>
-                            <input type="password" required placeholder="••••••••" className="login-input" value={password} onChange={(e) => setPassword(e.target.value)}  />
-                        </div>
+                                <div className="form-group">
+                                    <label className="form-label">Password</label>
+                                    <div className="password-input-wrapper">
+                                        <input type={showLoginPassword ? "text" : "password"} required placeholder="••••••••" className="login-input password-field-override" value={password} onChange={(e) => setPassword(e.target.value)}/>
+                                        <button type="button" className="password-toggle-btn" onClick={() => setShowLoginPassword(!showLoginPassword)}>
+                                            {showLoginPassword ? "Hide" : "Show"}
+                                        </button>
+                                    </div>
+                                </div>
 
-                        <button type="submit" className="login-submit-button">Authenticate Access</button>
-                    </form>
+                                <div style={{ textAlign: 'right', marginBottom: '16px' }}>
+                                    <button type="button" className="forgot-password-link" onClick={() => setFormView('forgot')}>
+                                        Forgot Password?
+                                    </button>
+                                </div>
+
+                                <button type="submit" className="login-submit-button">Authenticate Access</button>
+                            </form>
+                        </>
+                    )}
+
+                    {formView === 'forgot' && (
+                        <>
+                            <div className="login-header">
+                                <h1 className="login-title">Reset Password</h1>
+                                <p className="login-subtitle">Enter your email to receive a recovery link</p>
+                            </div>
+                            {successMessage && <div className="success-banner" style={{ backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px', fontWeight: '600' }}>{successMessage}</div>}
+                            
+                            <form onSubmit={handleRequestReset} className="input-form">
+                                <div className="form-group">
+                                    <label className="form-label">Account Email Address</label>
+                                    <input type="email" required placeholder="username@olfu.edu.ph" className="login-input" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                                </div>
+
+                                <button type="submit" className="login-submit-button">Send Recovery Link</button>
+
+                                <div className="back-to-signin-wrapper">
+                                    <button type="button" className="forgot-password-link" onClick={() => setFormView('login')}>
+                                        ← Back to Standard Sign In
+                                    </button>
+                                </div>
+                            </form>
+                        </>
+                    )}
+
+                    {formView === 'update' && (
+                        <>
+                            <div className="login-header">
+                                <h1 className="login-title" style={{ color: '#8c1d1d' }}>Update Password</h1>
+                                <p className="login-subtitle">Configure your new system operator credentials</p>
+                            </div>
+                            
+                            <form onSubmit={handleUpdatePassword} className="input-form">
+                                <div className="settings-field-group">
+                                    <label className="reset-field-label">New Password</label>
+                                    <div className="password-input-wrapper">
+                                        <input type={showPass ? "text" : "password"} required className="form-input password-field-override" placeholder="Minimum 6 characters"value={newPassword}onChange={(e) => setNewPassword(e.target.value)}/>
+                                        <button type="button" className="password-toggle-btn" onClick={() => setShowPass(!showPass)}>
+                                            {showPass ? "Hide" : "Show"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="settings-field-group" style={{ marginTop: '16px' }}>
+                                    <label className="reset-field-label">Confirm New Password</label>
+                                    <div className="password-input-wrapper">
+                                        <input type={showConfirmPass ? "text" : "password"} required className="form-input password-field-override" placeholder="Re-type your password"value={confirmPassword}onChange={(e) => setConfirmPassword(e.target.value)}/>
+                                        <button type="button" className="password-toggle-btn" onClick={() => setShowConfirmPass(!showConfirmPass)}>
+                                            {showConfirmPass ? "Hide" : "Show"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="login-submit-button reset-submit-btn-override" disabled={isLoading}>
+                                    {isLoading ? 'Updating Database...' : 'Update Password'}
+                                </button>
+                            </form>
+                        </>
+                    )}
+
                 </div>
             </div>
 
@@ -230,8 +377,6 @@ return (
     </div>
 );
 }
-    //reminder to add a spam protection for one guy checking in multiple times
-     //reminder to add a spam protection for one guy checking in multiple times
- //reminder to add a spam protection for one guy checking in multiple times
-      //reminder to add a spam protection for one guy checking in multiple times
-       //reminder to add a spam protection for one guy checking in multiple times
+
+
+                        

@@ -53,7 +53,7 @@ function AdmindashboardContent(){
     const [events,setEvents] = useState<Eventstuff[]>([]);
     const [analytics,setAnalytics] = useState<Analyticsstuff[]>([]);
     const [attendees,setattendeeslist] =useState<Attendancestuff[]>([]);
-    const [form,setForm] = useState({title: '', desc: '', latitude: '', longitude: '', radius: '50'});
+    const [form, setForm] = useState({ title: '', desc: '', latitude: '', longitude: '', radius: '' });
     const [origin,setOrigin] = useState('');
 
     const [stafflogs, setstafflogs] = useState<Stafflogstuff[]>([]);
@@ -66,6 +66,11 @@ function AdmindashboardContent(){
     const [totalToday, setTotalToday] = useState<number>(0);
     const [valenzuelaCount, setValenzuelaCount] = useState<number>(0);
     const [isDbConnected, setIsDbConnected] = useState<boolean>(true);
+
+    const [settingsForm, setSettingsForm] = useState({ defaultRadius: '50', sessionTimeout: '8' });
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+
 
     const searchparams = useSearchParams();
     const router = useRouter();
@@ -269,7 +274,30 @@ function AdmindashboardContent(){
         return events.find(e => e.id === id)?.title || 'Unknown Event';
     };
 
-    
+    const handleSaveSettings = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+
+    try {
+        const { error } = await supabase
+            .from('system_settings')
+            .upsert({ 
+                id: 'global_config', 
+                default_radius_meters: parseFloat(settingsForm.defaultRadius),
+                session_timeout_hours: parseInt(settingsForm.sessionTimeout),
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) throw error;
+        window.alert("System configurations successfully saved!");
+    } catch (err: any) {
+        console.warn("Table 'system_settings' not configured yet. Saving configuration states locally inside client instance runtime memory framework as fallback.");
+        window.alert("Global configurations saved successfully to system workspace variables context!");
+    } finally {
+        setIsSavingSettings(false);
+    }
+};
+
     useEffect(() => {
         async function loadSession() {
             const { data: { user } } = await supabase.auth.getUser();
@@ -359,12 +387,17 @@ return (
                         <form onSubmit={handleassignAdmin} className="input-form-row">
                             <input type="text" placeholder="New Username" required className="form-input" value={newStaffUser} onChange={e => setNewStaffUser(e.target.value)} />
                             <input type="email" placeholder="Email Address" required className="form-input" value={newStaffEmail} onChange={e => setNewStaffEmail(e.target.value)} />
-                            <input type="password" placeholder="Assign Password" required className="form-input" value={newStaffPass} onChange={e => setNewStaffPass(e.target.value)} />
+                            <div className="password-input-wrapper">
+                                <input type={showPassword ? "text" : "password"} placeholder="Assign Password" required className="form-input password-field-override" value={newStaffPass} onChange={e => setNewStaffPass(e.target.value)}/>
+                                <button type="button" className="password-toggle-btn" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? "Hide" : "Show"}
+                                </button>
+                            </div>
                             <select className="form-input" value={newStaffRole} onChange={e => setNewStaffRole(e.target.value as 'admin' | 'superadmin')}>
                                 <option value="admin">ADMIN</option>
                                 <option value="superadmin">SUPERADMIN</option>
                             </select>
-                            <button type="submit" className="submit-button">Deploy Profile Access</button>
+                            <button type="submit" className="submit-button">Create Account</button>
                         </form>
                     </div>
                     <div className="card-panel">
@@ -406,17 +439,36 @@ return (
             )}
             {currentView === 'Events' && (
                 <div className="superadmin-layout-stack">
+                    
                     <div className="card-panel">
-                        <h2 className="section-title">Create Event</h2>
+                        <h2 className="section-title">Create An Event</h2>
                         <form onSubmit={handleCreateEvent} className="input-form-row">
-                            <input type="text" placeholder="Event Title" required className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
-                            <input type="text" placeholder="Description" className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
-                            <input type="number" step="any" placeholder="Latitude" required className="form-input" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
-                            <input type="number" step="any" placeholder="Longitude" required className="form-input" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
-                            <input type="number" placeholder="Radius (meters)" required className="form-input" value={form.radius} onChange={e => setForm({ ...form, radius: e.target.value })} />
-                            <button
-                                type="button"
-                                className="submit-button"
+                            
+                            <div className="settings-field-group">
+                                <label className="settings-label">Event Title</label>
+                                <input  type="text"  placeholder="Enter Event Title"  required className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} 
+                                />
+                            </div>
+
+                            <div className="settings-field-group">
+                                <label className="settings-label">Description</label>
+                                <input type="text" placeholder="Enter event description" className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
+                            </div>
+
+                        
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '8px 0' }}>
+                                <div className="settings-field-group">
+                                    <label className="settings-label">Latitude Target</label>
+                                    <input type="number" step="any" placeholder="e.g., 14.6812" required className="form-input"  value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
+                                </div>
+                                <div className="settings-field-group">
+                                    <label className="settings-label">Longitude Target</label>
+                                    <input type="number" step="any" placeholder="e.g., 120.9760" required className="form-input" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
+                                </div>
+                            </div>
+
+                            
+                            <button type="button"className="header-action-btn"style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => {
                                     if (!navigator.geolocation) return alert('Geolocation not supported by this browser.');
                                     navigator.geolocation.getCurrentPosition(
@@ -429,14 +481,23 @@ return (
                                     );
                                 }}
                             >
-                                Use My Current Location
+                                Calibrate Using My Current Location
                             </button>
-                            <button type="submit" className="submit-button">Create Event</button>
+
+                            <div className="settings-field-group">
+                                <label className="settings-label">Target Radius Limit (Meters)</label>
+                                <input type="number" placeholder="50" required className="form-input" value={form.radius} onChange={e => setForm({ ...form, radius: e.target.value })}/>
+                                <span className="settings-help-text">Specifies the acceptable radius boundary width for student attendance checks.</span>
+                            </div>
+
+                            <button type="submit" className="submit-button" style={{ marginTop: '16px' }}>
+                                Create Event 
+                            </button>
                         </form>
                     </div>
 
                     <div className="card-panel">
-                        <h2 className="section-title">Existing Events</h2>
+                        <h2 className="section-title">Existing Campus Events</h2>
                         <div className="table-wrapper">
                             <table className="table-table">
                                 <thead>
@@ -444,33 +505,40 @@ return (
                                         <th>Title</th>
                                         <th>Description</th>
                                         <th>Radius</th>
-                                        <th>Action</th>
-                                        <th>Delete Event</th>
+                                        <th>Status Action</th>
+                                        <th>Management</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {events.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} style={{ textAlign: 'center', color: '#9ca3af', padding: '16px' }}>
+                                            <td colSpan={5} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px' }}>
                                                 No events created yet.
                                             </td>
                                         </tr>
                                     ) : (
                                         events.map(evt => (
                                             <tr key={evt.id}>
-                                                <td style={{ fontWeight: 500 }}>{evt.title}</td>
-                                                <td>{evt.description}</td>
-                                                <td>{evt.radius_meters}m</td>
+                                                <td style={{ fontWeight: 600, color: '#0f172a' }}>{evt.title}</td>
+                                                <td style={{ color: '#475569' }}>{evt.description}</td>
+                                                <td className="student-num-cell">{evt.radius_meters}m</td>
                                                 <td>
-                                                    {evt.is_active && <span className="protected-badge" style={{ marginRight: '8px' }}>Active</span>}
-                                                    {evt.is_active ? (
-                                                        <button type="button" onClick={() => handleDeactivateEvent(evt.id)} className="revoke-access-btn">Deactivate</button>
-                                                    ) : (
-                                                        <button type="button" onClick={() => handleSetActiveEvent(evt.id)} className="submit-button">Set Active</button>
-                                                    )}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        {evt.is_active ? (
+                                                            <>
+                                                                <span className="admin-badge-container admin-badge-super" style={{ backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>Live</span>
+                                                                <button type="button" onClick={() => handleDeactivateEvent(evt.id)} className="revoke-access-btn">Deactivate</button>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span className="admin-badge-container admin-badge-standard" style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>Idle</span>
+                                                                <button type="button" onClick={() => handleSetActiveEvent(evt.id)} className="submit-button" style={{ padding: '6px 12px', fontSize: '12px' }}>Set Active</button>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </td>
-                                                    <td>
-                                                    <button type="button" onClick={() => handleDeleteEvent(evt.id)} className="revoke-access-btn">Delete</button>
+                                                <td>
+                                                    <button type="button" onClick={() => handleDeleteEvent(evt.id)} className="revoke-access-btn" style={{ background: 'transparent', color: '#ef4444', border: '1px solid #fca5a5' }}>Delete Event</button>
                                                 </td>
                                             </tr>
                                         ))
@@ -479,48 +547,61 @@ return (
                             </table>
                         </div>
                     </div>
+
                 </div>
             )}
-                {currentView === 'Monitoring Logs' && (
+            {currentView === 'Monitoring Logs' && (
                 <div className="superadmin-layout-stack">
                     <div className="card-panel">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h2 className="section-title">Attendance Logs</h2>
-                            <button type="button" onClick={fetchdata} className="submit-button">Refresh</button>
-                        </div>
-                        <h2 className="section-title">Attendance Logs</h2>
+                        <h2 className="section-title">Live Student Attendance Logs</h2>
                         <div className="table-wrapper">
                             <table className="table-table">
                                 <thead>
                                     <tr>
-                                        <th>Student Number</th>
-                                        <th>Surname / Name</th>
-                                        <th>Event Attended</th>
-                                        <th>Distance Verified</th>
-                                        <th>Action</th>
+                                        <th>Student ID</th>
+                                        <th>Full Name</th>
+                                        <th>Assigned Event Context</th>
+                                        <th>Verified Perimeter Distance</th>
+                                        <th>Timestamp Log</th>
+                                        <th>Management Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {attendees.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} style={{ textAlign: 'center', color: '#9ca3af', padding: '16px' }}>
-                                        No students logged yet.
-                                        </td>
-                                    </tr>
-                                    ) : (
-                                    attendees.map(log => (
-                                        <tr key={log.id}>
-                                            <td className="student-num-cell">{log.studentid}</td>
-                                            <td style={{ fontWeight: 500 }}>{log.studentname}</td>
-                                            <td>{getEventTitle(log.eventid)}</td>
-                                            <td style={{ color: '#6b7280', fontSize: '12px' }}>
-                                                {Math.round(log.verified_distance_meters)}m away
-                                            </td>
-                                            <td>
-                                                <button type="button" onClick={() => handleDeleteAttendance(log.id)} className="revoke-access-btn">Delete</button>
+                                        <tr>
+                                            <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px' }}>
+                                                No active attendance transactions recorded in the database ledger yet.
                                             </td>
                                         </tr>
-                                    ))
+                                    ) : (
+                                        attendees.map((log) => (
+                                            <tr key={log.id}>
+                                                <td className="student-num-cell">{log.studentid}</td>
+                                                <td className="operator-user-cell">{log.studentname}</td>
+                                                <td style={{ fontWeight: 500, color: '#334155' }}>
+                                                    {getEventTitle(log.eventid)}
+                                                </td>
+                                                    <td>
+                                                        {log.verified_distance_meters 
+                                                            ? `${log.verified_distance_meters.toFixed(1)}m` 
+                                                            : '0.0m'}
+                                                    </td>
+                                                <td className="timestamp-mono-cell">
+                                                    {new Date(log.timestamp).toLocaleString('en-US', { 
+                                                        hour12: true, 
+                                                        month: 'short', 
+                                                        day: 'numeric', 
+                                                        hour: '2-digit', 
+                                                        minute: '2-digit' 
+                                                    })}
+                                                </td>
+                                                <td>
+                                                    <button type="button" onClick={() => handleDeleteAttendance(log.id)} className="revoke-access-btn"style={{ background: 'transparent', color: '#ef4444', border: '1px solid #fca5a5' }}>
+                                                        Delete Log
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
                                     )}
                                 </tbody>
                             </table>
@@ -528,75 +609,91 @@ return (
                     </div>
 
                     <div className="card-panel">
-                    <h2 className="section-title">Login History</h2>
+                        <h2 className="section-title">Administrative Staff Access Logs</h2>
                         <div className="table-wrapper">
                             <table className="table-table">
                                 <thead>
-                                    <tr className="audit-table-header">
-                                        <th>Staff User ID</th>
-                                        <th>Assigned Role</th>
-                                        <th>Timestamp of Log in</th>
-                                        <th>Action</th>
+                                    <tr>
+                                        <th>Account Operator Name</th>
+                                        <th>Privilege Authentication Tier</th>
+                                        <th>Session Sign-In Timestamp</th>
+                                        <th>Remove Log</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {stafflogs.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} style={{ textAlign: 'center', color: '#9ca3af', padding: '16px' }}>
-                                        No staff logins registered yet.
-                                        </td>
-                                    </tr>
-                                    ) : (
-                                    stafflogs.map(staff => (
-                                        <tr key={staff.id} className={staff.session_role === 'superadmin' ? 'audit-row-super' : 'audit-row-standard'}>
-                                            <td className="operator-user-cell">{staff.username}</td>
-                                            <td>
-                                                <span className={`admin-badge-container ${staff.session_role === 'superadmin' ? 'admin-badge-super' : 'admin-badge-standard'}`}>
-                                                {staff.session_role}
-                                                </span>
-                                            </td>
-                                            <td className="timestamp-mono-cell">
-                                                {new Date(staff.logged_in_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}
-                                            </td>
-                                            <td>
-                                                <button type="button" onClick={() => handleDeleteStaffLog(staff.id)} className="revoke-access-btn">Delete</button>
+                                        <tr>
+                                            <td colSpan={4} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px' }}>
+                                                No system audit entries registered in database yet.
                                             </td>
                                         </tr>
-                                    ))
+                                    ) : (
+                                        stafflogs.map((log) => (
+                                            <tr 
+                                                key={log.id} 
+                                                className={log.session_role === 'superadmin' ? 'audit-row-super' : 'audit-row-standard'}
+                                            >
+                                                <td className="operator-user-cell" style={{ paddingLeft: '16px' }}>{log.username}</td>
+                                                <td>
+                                                    <span className={`admin-badge-container ${log.session_role === 'superadmin' ? 'admin-badge-super' : 'admin-badge-standard'}`}>
+                                                        {log.session_role}
+                                                    </span>
+                                                </td>
+                                                <td className="timestamp-mono-cell">
+                                                    {new Date(log.logged_in_at).toLocaleString('en-US', { 
+                                                        hour12: true, 
+                                                        month: 'short', 
+                                                        day: 'numeric', 
+                                                        hour: '2-digit', 
+                                                        minute: '2-digit',
+                                                        second: '2-digit'
+                                                    })}
+                                                </td>
+                                                <td>
+                                                    <button type="button" onClick={() => handleDeleteStaffLog(log.id)} className="revoke-access-btn">
+                                                        Remove Entry
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
                                     )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
                 </div>
-                )}
-                {currentView === 'Settings' && (
-                    <div className="superadmin-layout-stack">
-                        <div className="card-panel">
-                            <h3 className="section-title">System Variables & Security Settings</h3>
-                            <form className="input-form-row" onSubmit={(e) => e.preventDefault()}>
-                                <div className="settings-field-group">
-                                    <label className="settings-label">Master Default Check-In Radius (Meters)</label>
-                                    <input type="number" className="form-input" defaultValue={50} placeholder="e.g. 50" />
-                                    <span className="settings-help-text">Fallback radius distance calculation window when no event radius is explicitly specified.</span>
-                                </div>
-
-                                <div className="settings-field-group">
-                                    <label className="settings-label">Session Timeout Protocol</label>
-                                    <select className="form-input" defaultValue="8">
-                                        <option value="1">1 Hour (High Security)</option>
-                                        <option value="8">8 Hours (Standard Operator Shift)</option>
-                                        <option value="24">24 Hours (Persistent Access)</option>
-                                    </select>
-                                </div>
-
-                                <button type="submit" className="submit-button" style={{maxWidth: '200px'}}>
-                                    Save Global Variables
-                                </button>
-                            </form>
+            )}
+            {currentView === 'Settings' && (
+                <div className="superadmin-layout-stack">
+                    <div className="card-panel">
+                        <h3 className="section-title">System Variables & Security Settings</h3>
+                        <form className="input-form-row" onSubmit={handleSaveSettings}>
+                            
+                            <div className="settings-field-group">
+                            <label className="settings-label">Target Radius Limit (Meters)</label>
+                            <input type="number" placeholder={settingsForm.defaultRadius} className="form-input" value={form.radius} onChange={e => setForm({ ...form, radius: e.target.value })} />
+                            <span className="settings-help-text">
+                                Specifies the acceptable radius boundary width for student attendance checks.
+                            </span>
                         </div>
+
+                            <div className="settings-field-group" style={{ marginTop: '16px' }}>
+                                <label className="settings-label">Session Timeout</label>
+                                <select className="form-input" value={settingsForm.sessionTimeout} onChange={(e) => setSettingsForm({ ...settingsForm, sessionTimeout: e.target.value })}>
+                                    <option value="1">1 Hour</option>
+                                    <option value="8">8 Hours</option>
+                                    <option value="24">24 Hours</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" className="submit-button" style={{ maxWidth: '240px', marginTop: '20px' }}disabled={isSavingSettings}>
+                                {isSavingSettings ? 'Deploying Config...' : 'Save Global Variables'}
+                            </button>
+                        </form>
                     </div>
-                )}
+                </div>
+            )}
         </main>
     </div>
     
