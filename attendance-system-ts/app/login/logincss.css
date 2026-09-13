@@ -59,14 +59,11 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Vertically centers the entire inner layout stack */
+  justify-content: center; 
   padding: 40px;
   box-sizing: border-box;
   min-width: 0; 
   overflow: hidden; 
-  
-  /* CRUCIAL FIX 1: Forces both columns to span the full vertical viewport, 
-     ensuring content baselines align perfectly */
   height: 100vh; 
   
   transition: opacity 0.5s ease, 
@@ -95,6 +92,20 @@ html, body {
   height: 100vh;
   z-index: 0;
   transition: clip-path 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.split-reset-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 20;
+  background: #3d0101;
+  border: none;
+  color:white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .panel-left {
@@ -179,19 +190,6 @@ html, body {
   opacity: 0;
   transform: scale(0.9) translateX(-50px);
   pointer-events: none;
-}
-
-.split-reset-btn {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 20;
-  background: rgba(255,255,255,0.9);
-  border: none;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .portal-main-header,
