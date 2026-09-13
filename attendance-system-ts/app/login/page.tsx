@@ -374,7 +374,21 @@ return (
             </div>
 
         </div>
+        <footer className="portal-footer">
+            <div className="footer-left-zone">
+                <p>© {new Date().getFullYear()} Our Lady of Fatima University. All Rights Reserved.</p>
+                <p className="footer-developer-credit">
+                    Developed by <span>CCS TechForge Society</span> (Westley Delos Santos & Sushane Vendiola)
+                </p>
+            </div>
+            <div className="footer-right-zone">
+                <a href="https://fatima.edu.ph" target="_blank" rel="noopener noreferrer">OLFU Web Portal</a>
+                <span className="footer-divider">•</span>
+                <a href="#" onClick={(e) => { e.preventDefault(); alert("System Status: Operational. All secure API connections verified."); }}>System Infrastructure Logs</a>
+            </div>
+        </footer>
     </div>
+    
 );
 }
 

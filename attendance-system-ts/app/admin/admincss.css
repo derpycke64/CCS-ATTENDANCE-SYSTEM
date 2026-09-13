@@ -322,9 +322,9 @@
 }
 
 .table-table th {
-  background-color: #f8fafc;
+  background-color: #f8fafc; 
   color: #475569;
-  padding: 8px 12px; 
+  padding: 14px 16px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -333,9 +333,9 @@
 }
 
 .table-table td {
-  padding: 6px 12px; 
+  padding: 16px;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 13px; 
+  font-size: 14px;
   color: #334155;
   vertical-align: middle;
 }
@@ -379,7 +379,7 @@
   background-color: #ffffff;
   color: #ef4444;
   border: 1px solid #fca5a5;
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -404,7 +404,7 @@
   font-family: JetBrains Mono, Fira Code, monospace;
   color: #8c1d1d;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .operator-user-cell {
@@ -414,43 +414,10 @@
 
 .timestamp-mono-cell {
   font-family: JetBrains Mono, Fira Code, monospace;
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
 }
-.password-input-wrapper {
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
 
-
-.form-input.password-field-override {
-  padding-right: 64px !important; 
-}
-
-.password-toggle-btn {
-  position: absolute;
-  right: 12px;
-  background: transparent;
-  border: none;
-  color: #64748b; 
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  user-select: none;
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.password-toggle-btn:hover {
-  color: #8c1d1d; 
-  background-color: #f1f5f9;
-}
 
 @media (max-width: 1024px) {
   .dashboard-container {
