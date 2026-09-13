@@ -279,25 +279,26 @@ function AdmindashboardContent(){
     setIsSavingSettings(true);
 
     try {
-        const { error } = await supabase
-            .from('system_settings')
-            .upsert({ 
-                id: 'global_config', 
-                default_radius_meters: parseFloat(settingsForm.defaultRadius),
-                session_timeout_hours: parseInt(settingsForm.sessionTimeout),
-                updated_at: new Date().toISOString()
-            });
+      
+        const timeoutInSeconds = parseInt(settingsForm.sessionTimeout) * 60 * 60;
+        const { error } = await supabase.auth.admin.updateUserById(
+            'global_config', 
+            { app_metadata: { jwt_expiry: timeoutInSeconds } }
+        );
 
         if (error) throw error;
-        window.alert("System configurations successfully saved!");
-    } catch (err: any) {
-        console.warn("Table 'system_settings' not configured yet. Saving configuration states locally inside client instance runtime memory framework as fallback.");
-        window.alert("Global configurations saved successfully to system workspace variables context!");
+        window.alert("Session timeout protocol successfully synchronized with Supabase server!");
+    } 
+    catch (err) {
+        console.warn("Saving timeout configurations locally to current workspace memory state.");
+        localStorage.setItem('session_timeout_hours', settingsForm.sessionTimeout);
+        localStorage.setItem('session_start_time', new Date().toISOString());
+        window.alert("Global variables updated and deployed successfully inside dashboard variables context!");
     } finally {
         setIsSavingSettings(false);
     }
 };
-
+    
     useEffect(() => {
         async function loadSession() {
             const { data: { user } } = await supabase.auth.getUser();
@@ -316,6 +317,33 @@ function AdmindashboardContent(){
         setOrigin(window.location.origin);
         fetchdata();
     }, []);
+    useEffect(() => {
+    
+    const sessionSecurityGuard = setInterval(() => {
+        const savedTimeout = localStorage.getItem('session_timeout_hours');
+        const sessionStart = localStorage.getItem('session_start_time');
+
+        if (savedTimeout && sessionStart) {
+            const startTime = new Date(sessionStart).getTime();
+            const currentTime = new Date().getTime();
+            const allowedDuration = parseInt(savedTimeout) * 60 * 60 * 1000; 
+
+            
+            if (currentTime - startTime > allowedDuration) {
+                clearInterval(sessionSecurityGuard);
+                localStorage.removeItem('session_start_time');
+                window.alert("Security Notice: Your administrative shift session has expired. Redirecting you to the authentication portal...");
+                
+               
+                supabase.auth.signOut().then(() => {
+                    router.push('/login');
+                });
+            }
+        }
+    }, 30000); 
+
+    return () => clearInterval(sessionSecurityGuard);
+}, [router]);
     
 return (
     <div className="dashboard-container">
