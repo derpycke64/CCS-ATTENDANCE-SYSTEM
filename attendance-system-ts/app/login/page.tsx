@@ -125,11 +125,11 @@ export default function LoginPage() {
         e.preventDefault();
         setSuccessMessage('');
         
-        // Captures your current absolute URL context origin (e.g., your-app.vercel.app)
+    
         const redirectToUrl = `${window.location.origin}/reset-password`;
 
         const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-            redirectTo: redirectToUrl, // Tells Supabase where to send the user after they click the email link
+            redirectTo: redirectToUrl, 
         });
 
         if (error) {
