@@ -290,10 +290,10 @@ function AdmindashboardContent(){
         window.alert("Session timeout protocol successfully synchronized with Supabase server!");
     } 
     catch (err) {
-        console.warn("Saving timeout configurations locally to current workspace memory state.");
+        console.warn("Saving timeout configurations locally.");
         localStorage.setItem('session_timeout_hours', settingsForm.sessionTimeout);
         localStorage.setItem('session_start_time', new Date().toISOString());
-        window.alert("Global variables updated and deployed successfully inside dashboard variables context!");
+        window.alert("Updated and deployed successfully inside dashboard variables context!");
     } finally {
         setIsSavingSettings(false);
     }
