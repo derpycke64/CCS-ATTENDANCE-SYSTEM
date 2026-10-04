@@ -20,13 +20,16 @@ interface Eventstuff{
     radius_meters:number;
     is_active:boolean;
 }
-interface Attendancestuff{
-    id:string;
-    eventid:string;
-    studentid:number;
-    studentname:string;
-    timestamp:string;
-    verified_distance_meters:number;
+interface Attendancestuff {
+    id: string;
+    eventid: string;
+    student_email: string;
+    studentname: string;
+    timestamp: string;     
+    checked_in_at?: string;  
+    checked_out_at?: string; 
+    verified_distance_meters: number;
+    log_type?: string;     
 }
 interface Analyticsstuff{
     name:string;
@@ -70,6 +73,7 @@ function AdmindashboardContent(){
     const [settingsForm, setSettingsForm] = useState({ defaultRadius: '50', sessionTimeout: '8' });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [selectedAdminFilterEvent, setSelectedAdminFilterEvent] = useState<string>('OVERALL');
 
 
     const searchparams = useSearchParams();
@@ -118,11 +122,17 @@ function AdmindashboardContent(){
         setTotalToday(checkedInToday);
 
         const valenzuelaAttendees = fetchedAttendance.filter(att => {
-            const attDate = new Date(att.timestamp);
-            const matchingEvent = fetchedEvents.find(e => e.id === att.eventid);
-            return attDate >= startOfToday && matchingEvent?.title === 'Testing';
+  
+        const targetTime = att.checked_in_at || att.timestamp;
+        if (!targetTime) return false;
+
+        const attDate = new Date(targetTime);
+        const matchingEvent = fetchedEvents.find(e => e.id === att.eventid);
+        
+        return attDate >= startOfToday && matchingEvent !== undefined;
         }).length;
-        setValenzuelaCount(valenzuelaAttendees);
+
+setValenzuelaCount(valenzuelaAttendees);
        
         const chartData = fetchedEvents.map(evnt => ({
             name: evnt.title,
@@ -162,17 +172,25 @@ function AdmindashboardContent(){
     };
 
     const handleremoveAdmin = async (id: string, targetedRole: string) => {
-        if (targetedRole === 'superadmin') {
-            return alert('Security Block: Superadmin structural privilege lines cannot be deleted.');
-        }
+    if (targetedRole.toUpperCase() === 'SUPERADMIN') {
+        return alert('Security Block: Superadmin structural privilege lines cannot be deleted.');
+    }
 
-        const check = window.confirm("Permanently delete this admin account?");
+    const check = window.confirm("Permanently delete this admin account?");
 
-        if (check) {
-            const { error } = await supabase.from('profiles').delete().eq('id', id);
-        if (error) alert(error.message);
-            fetchdata();
+    if (check) {
+        const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+
+        if (error) {
+        alert(`Database Blocked Deletion: ${error.message}`);
+        } else {
+        alert(" Account successfully removed from the system.");
+        fetchdata();
         }
+    }
     };
 
     const handleCreateEvent = async (Ev: React.SubmitEvent<HTMLFormElement>) => {
@@ -355,7 +373,7 @@ return (
             <nav className='tab-container'>
                 <button onClick={() => setCurrentView('Project Overview')}className={`tab-button ${currentView === 'Project Overview' ? 'active' : ''}`}> Project Overview</button>
                 {(roles === 'superadmin') && (<><button onClick={() => setCurrentView('Staff Accounts')} className={`tab-button ${currentView === 'Staff Accounts' ? 'active' : ''}`}>Staff Accounts</button> <button onClick={() => setCurrentView('Events')} className={`tab-button ${currentView === 'Events' ? 'active' : ''}`}>Event Creation</button><button onClick={() => setCurrentView('Monitoring Logs')} className={`tab-button ${currentView === 'Monitoring Logs' ? 'active' : ''}`}>Monitoring Logs</button><button onClick={() => setCurrentView('Settings')} className={`tab-button ${currentView === 'Settings' ? 'active' : ''}`}>Settings</button></>)}
-                {(roles === 'admin') && (<><button onClick={() => setCurrentView('Events')} className={`tab-button ${currentView === 'Events' ? 'active' : ''}`}>Event Creation</button><button onClick={() => setCurrentView('Monitoring Logs')} className={`tab-button ${currentView === 'Monitoring Logs' ? 'active' : ''}`}>Monitoring Logs</button><button onClick={() => setCurrentView('Settings')} className={`tab-button ${currentView === 'Settings' ? 'active' : ''}`}>Settings</button></>)}
+                {(roles === 'admin') && (<><button onClick={() => setCurrentView('Monitoring Logs')} className={`tab-button ${currentView === 'Monitoring Logs' ? 'active' : ''}`}>Monitoring Logs</button><button onClick={() => setCurrentView('Settings')} className={`tab-button ${currentView === 'Settings' ? 'active' : ''}`}>Settings</button></>)}
             </nav>
         </aside>
         <main className="dashboard-main-content">
@@ -450,7 +468,7 @@ return (
                                         </td>
                                         <td>
                                             {account.role !== 'superadmin' ? (
-                                                <button type="button" onClick={() => handleremoveAdmin(account.id, account.username)} className="revoke-access-btn">
+                                                <button type="button" onClick={() => handleremoveAdmin(account.id, account.role)} className="revoke-access-btn">
                                                 Revoke role Access
                                                 </button>
                                             ) : (
@@ -474,8 +492,7 @@ return (
                             
                             <div className="settings-field-group">
                                 <label className="settings-label">Event Title</label>
-                                <input  type="text"  placeholder="Enter Event Title"  required className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} 
-                                />
+                                <input type="text" placeholder="Enter Event Title" required className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
                             </div>
 
                             <div className="settings-field-group">
@@ -483,11 +500,10 @@ return (
                                 <input type="text" placeholder="Enter event description" className="form-input" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} />
                             </div>
 
-                        
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '8px 0' }}>
                                 <div className="settings-field-group">
                                     <label className="settings-label">Latitude Target</label>
-                                    <input type="number" step="any" placeholder="e.g., 14.6812" required className="form-input"  value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
+                                    <input type="number" step="any" placeholder="e.g., 14.6812" required className="form-input" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
                                 </div>
                                 <div className="settings-field-group">
                                     <label className="settings-label">Longitude Target</label>
@@ -495,17 +511,16 @@ return (
                                 </div>
                             </div>
 
-                            
-                            <button type="button"className="header-action-btn"style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                            <button type="button" className="header-action-btn" style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                 onClick={() => {
-                                    if (!navigator.geolocation) return alert('Geolocation not supported by this browser.');
+                                    if (!navigator.geolocation) return alert('Geolocation not supported.');
                                     navigator.geolocation.getCurrentPosition(
                                         (pos) => setForm({
                                             ...form,
                                             latitude: pos.coords.latitude.toString(),
                                             longitude: pos.coords.longitude.toString()
                                         }),
-                                        () => alert('Unable to get your location.')
+                                        () => alert('Unable to get location.')
                                     );
                                 }}
                             >
@@ -515,7 +530,6 @@ return (
                             <div className="settings-field-group">
                                 <label className="settings-label">Target Radius Limit (Meters)</label>
                                 <input type="number" placeholder="50" required className="form-input" value={form.radius} onChange={e => setForm({ ...form, radius: e.target.value })}/>
-                                <span className="settings-help-text">Specifies the acceptable radius boundary width for student attendance checks.</span>
                             </div>
 
                             <button type="submit" className="submit-button" style={{ marginTop: '16px' }}>
@@ -523,7 +537,6 @@ return (
                             </button>
                         </form>
                     </div>
-
                     <div className="card-panel">
                         <h2 className="section-title">Existing Campus Events</h2>
                         <div className="table-wrapper">
@@ -575,61 +588,120 @@ return (
                             </table>
                         </div>
                     </div>
-
                 </div>
             )}
+
             {currentView === 'Monitoring Logs' && (
                 <div className="superadmin-layout-stack">
-                    <div className="card-panel">
+                    <div className="unified-ledger-card card-panel">
                         <h2 className="section-title">Live Student Attendance Logs</h2>
-                        <div className="table-wrapper">
-                            <table className="table-table">
+                        <div className="ledger-tabs-container">
+                            <button 
+                                type="button"
+                                onClick={() => setSelectedAdminFilterEvent('OVERALL')}
+                                className={`ledger-filter-tab ${selectedAdminFilterEvent === 'OVERALL' ? 'active-tab' : 'inactive-tab'}`}
+                            >
+                                Global Summary
+                            </button>
+                            
+                            {events.map(evt => (
+                                <button 
+                                    key={evt.id}
+                                    type="button"
+                                    onClick={() => setSelectedAdminFilterEvent(evt.id)}
+                                    className={`ledger-filter-tab ${selectedAdminFilterEvent === evt.id ? 'active-tab' : 'inactive-tab'}`}
+                                >
+                                    {evt.title}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="ledger-stats-row">
+                            <div className="ledger-stat-box scope-box">
+                                <span className="ledger-stat-label">Selected Scope</span>
+                                <div className="ledger-stat-value">
+                                    {selectedAdminFilterEvent === 'OVERALL' ? 'All Scheduled Sessions' : getEventTitle(selectedAdminFilterEvent)}
+                                </div>
+                            </div>
+                            <div className="ledger-stat-box count-box">
+                                <span className="ledger-stat-label">Verified Attendance</span>
+                                <div className="ledger-stat-value">
+                                    {selectedAdminFilterEvent === 'OVERALL' 
+                                        ? attendees.length 
+                                        : attendees.filter(att => att.eventid === selectedAdminFilterEvent).length
+                                    } Students
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="table-wrapper ledger-table-container">
+                            <table className="table-table ledger-data-table">
                                 <thead>
                                     <tr>
-                                        <th>Student ID</th>
+                                        <th>Student Email</th>
                                         <th>Full Name</th>
                                         <th>Assigned Event Context</th>
                                         <th>Verified Perimeter Distance</th>
-                                        <th>Timestamp Log</th>
+                                        <th>Checked In At</th>
+                                        <th>Checked Out At</th>
+                                        <th>Status Badge</th>
                                         <th>Management Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {attendees.length === 0 ? (
+                                    {attendees.filter(att => selectedAdminFilterEvent === 'OVERALL' ? true : att.eventid === selectedAdminFilterEvent).length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px' }}>
+                                            <td colSpan={8} style={{ textAlign: 'center', color: '#9ca3af', padding: '24px' }}>
                                                 No active attendance transactions recorded in the database ledger yet.
                                             </td>
                                         </tr>
                                     ) : (
-                                        attendees.map((log) => (
-                                            <tr key={log.id}>
-                                                <td className="student-num-cell">{log.studentid}</td>
-                                                <td className="operator-user-cell">{log.studentname}</td>
-                                                <td style={{ fontWeight: 500, color: '#334155' }}>
-                                                    {getEventTitle(log.eventid)}
-                                                </td>
-                                                    <td>
-                                                        {log.verified_distance_meters 
+                                        attendees
+                                            .filter(att => selectedAdminFilterEvent === 'OVERALL' ? true : att.eventid === selectedAdminFilterEvent)
+                                            .map((log, idx) => (
+                                                <tr key={log.id || idx}>
+                                                    <td className="student-num-cell ledger-email-cell">{log.student_email || (log as any).studentid}</td>
+                                                    <td className="operator-user-cell ledger-name-cell">{log.studentname}</td>
+                                                    <td style={{ fontWeight: 500, color: '#334155' }}>
+                                                        {getEventTitle(log.eventid)}
+                                                    </td>
+                                                    <td className="ledger-distance-cell">
+                                                        🎯 {log.verified_distance_meters 
                                                             ? `${log.verified_distance_meters.toFixed(1)}m` 
                                                             : '0.0m'}
                                                     </td>
-                                                <td className="timestamp-mono-cell">
-                                                    {new Date(log.timestamp).toLocaleString('en-US', { 
-                                                        hour12: true, 
-                                                        month: 'short', 
-                                                        day: 'numeric', 
-                                                        hour: '2-digit', 
-                                                        minute: '2-digit' 
-                                                    })}
-                                                </td>
-                                                <td>
-                                                    <button type="button" onClick={() => handleDeleteAttendance(log.id)} className="revoke-access-btn"style={{ background: 'transparent', color: '#ef4444', border: '1px solid #fca5a5' }}>
-                                                        Delete Log
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
+                                                    
+                                                
+                                                    <td className="timestamp-mono-cell ledger-time-cell">
+                                                        {log.checked_in_at 
+                                                            ? new Date(log.checked_in_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+                                                            : '—'}
+                                                    </td>
+                                                    
+                                                
+                                                    <td className={`timestamp-mono-cell ledger-time-cell ${!log.checked_out_at ? 'active-checkout' : ''}`}>
+                                                        {log.checked_out_at 
+                                                            ? new Date(log.checked_out_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+                                                            : 'Still Checked In'}
+                                                    </td>
+
+                                                
+                                                    <td>
+                                                        <span className={`status-pill-badge ${log.log_type === 'Check Out' ? 'check-out-pill' : 'check-in-pill'}`}>
+                                                            {log.log_type || 'Check In'}
+                                                        </span>
+                                                    </td>
+
+                                                    <td>
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => handleDeleteAttendance(log.id)} 
+                                                            className="revoke-access-btn ledger-delete-btn"
+                                                        >
+                                                            Delete Log
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
                                     )}
                                 </tbody>
                             </table>
@@ -689,9 +761,9 @@ return (
                             </table>
                         </div>
                     </div>
-
                 </div>
             )}
+            
             {currentView === 'Settings' && (
                 <div className="superadmin-layout-stack">
                     <div className="card-panel">

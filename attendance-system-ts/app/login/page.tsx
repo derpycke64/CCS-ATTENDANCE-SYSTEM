@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { getDistanceInMeters } from "../../utils/geo";
 import "./logincss.css";
 import Image from 'next/image';
+import { auth } from '@/lib/firebase'; 
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 
 interface Eventstuff{
     id:string;
@@ -13,6 +15,7 @@ interface Eventstuff{
     latitude:number;
     longitude:number;
     radius_meters:number;
+    location?: string;
 }
 
 
@@ -40,6 +43,12 @@ export default function LoginPage() {
     const [showConfirmPass, setShowConfirmPass] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const [attendanceType, setAttendanceType] = useState<'Check In' | 'Check Out'>('Check In'); 
+    const [selectedEventId, setSelectedEventId] = useState<string>(''); 
+    const [completedEventIds, setCompletedEventIds] = useState<string[]>([]);
+    const [availableEvents, setAvailableEvents] = useState<Eventstuff[]>([]); 
+    const [studentUser, setStudentUser] = useState<any>(null);
+    
 
     const [activeSide, setActiveSide] = useState<'left' | 'right' | null>(null);
     const gpsBannerStyle = {
@@ -82,45 +91,141 @@ export default function LoginPage() {
 
         router.push('/admin');
     }
-    
-    const handleStudentCheckIn = async (evnt: React.SubmitEvent<HTMLFormElement>) => {
-        evnt.preventDefault();
-       
-        if (!studentid || !studentname) {
-            return alert('Please fill in required fields');
-        }
-         if (studentid.toString().length !== 11) {
-            window.alert("Validation Error: Your Student ID must be exactly 11 digits long (e.g., 01251111111). Please check your entry and try again.");
-            return;
-        }
-        if (!gpsVerified || !targetevent) {
-            return alert('You are not within the event range or no active event found');
-        }
-        const activeEventId = targetevent.id;
-        const { error: checkInError } = await supabase
-            .from('attendance')
-            .insert([
-            {
-                studentid: parseInt(studentid) || 0,
-                studentname: studentname,
-                eventid: activeEventId,
-                timestamp: new Date().toISOString(),
-                verified_distance_meters: calculatedDistance || 0
-            }
-            ]);
 
-        if (checkInError) {
-            if (checkInError.code === '23505') {
-                alert('You have already checked in for this event.');
-            } else {
-                alert(`Error checking in: ${checkInError.message}`);
+    useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+        const emailStr = user.email || '';
+        
+
+        const isValidDomain = 
+            emailStr.endsWith('@olfu.edu.ph') || 
+            emailStr.endsWith('@fatima.edu.ph') ||
+            emailStr.endsWith('@student.fatima.edu.ph');
+
+        if (isValidDomain) {
+
+            setStudentUser(user);
+            if (user.displayName) {
+            setStudentName(user.displayName);
             }
         } else {
-            alert('successfully checked in');
-            setStudentId('');
-            setStudentName('');
+
+            await firebaseSignOut(auth);
+            setStudentUser(null);
+            alert(" Access Denied: You must sign in using your official OLFU student workspace account.");
+        }
+        } else {
+
+        setStudentUser(null);
+        }
+    });
+
+
+    return () => unsubscribe();
+    }, [setStudentUser, setStudentName]);
+
+    const handleStudentCheckIn = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!studentUser || !selectedEventId) return;
+
+        try {
+            if (attendanceType === 'Check In') {
+            const { data: existingRecord, error: checkError } = await supabase
+                .from('attendance')
+                .select('checked_in_at')
+                .eq('student_email', studentUser.email)
+                .eq('eventid', selectedEventId)
+                .maybeSingle();
+
+            if (checkError) throw checkError;
+
+
+            if (existingRecord && existingRecord.checked_in_at) {
+                alert("You have already checked in for this event! Please select 'Check Out' if you are leaving.");
+                return; 
+            }
+            }
+
+            const isCheckingIn = attendanceType === 'Check In';
+            const currentClockTime = new Date().toISOString();
+
+            const payload: any = {
+                eventid: selectedEventId,
+                studentname: studentUser.displayName || studentname,
+                student_email: studentUser.email,
+                log_type: attendanceType, 
+                timestamp: currentClockTime,
+                verified_distance_meters: calculatedDistance !== null ? calculatedDistance : 0
+            };
+
+            if (isCheckingIn) {
+                payload.checked_in_at = currentClockTime;
+            } else {
+                payload.checked_out_at = currentClockTime;
+            }
+
+            const { error: dbError } = await supabase
+            .from('attendance')
+            .upsert(payload, { 
+                onConflict: 'student_email,eventid' 
+            });
+
+            if (dbError) throw dbError;
+
+            alert(`✓ ${attendanceType} logged successfully!`);
+
+            if (attendanceType === 'Check Out') {
+            setCompletedEventIds((prev) => [...prev, selectedEventId]);
+            setSelectedEventId('');
+            await signOut(auth); 
+            setStudentUser(null);
+            }
+
+        } catch (error: any) {
+            console.error("Database validation error:", error);
+            alert(` Sync failed: ${error.message}`);
         }
     };
+    
+
+    const handleGoogleSignIn = async () => {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+            
+        const emailStr = user.email || '';
+        const isValidDomain = 
+        emailStr.endsWith('@olfu.edu.ph') || 
+        emailStr.endsWith('@fatima.edu.ph') ||
+        emailStr.endsWith('@student.fatima.edu.ph');
+
+        if (!isValidDomain) {
+            await signOut(auth);
+            alert(" You must sign in using your official workspace account.");
+            setStudentUser(null);
+            return;
+        }
+
+        setStudentUser(user);
+        
+        
+        if (user.displayName) {
+            setStudentName(user.displayName);
+        }
+        
+        alert(` Logged in successfully: Welcome back, ${user.displayName}!`);
+
+        } catch (error) {
+        console.error("Google Auth Modal Exception:", error);
+        alert(" Identity verification check cancelled or connection timed out.");
+        }
+    };
+
     const handleRequestReset = async (e: React.SubmitEvent  <HTMLFormElement>) => {
         e.preventDefault();
         setSuccessMessage('');
@@ -164,52 +269,77 @@ export default function LoginPage() {
     }, []);
 
     useEffect(() => {
+        const fetchLiveEvents = async () => {
+        try {
+            const { data, error } = await supabase
+            .from('events')
+            .select('*');
+
+            if (error) throw error;
+            if (data) setAvailableEvents(data);
+        } catch (err) {
+            console.error("Error fetching live admin events:", err);
+        }
+        };
+        fetchLiveEvents();
+    }, []);
+    
+    useEffect(() => {
         async function evaluateStudentRange() {
             setLoadingGps(true);
+            if (!selectedEventId) {
+                setGpsStatus("Please select a campus event to verify your location range.");
+                setGpsVerified(false);
+                setLoadingGps(false);
+                return;
+            }
             if (!navigator.geolocation) {
                 setGpsStatus("Geolocation is not supported by your browser");
                 setLoadingGps(false);
                 return;
             }
-            const {data: latestEvent, error } = await supabase
-                .from('events')
-                .select('*')
-                .eq('is_active', true)
-                .single();
+            const chosenEvent = availableEvents.find(ev => ev.id === selectedEventId);
 
-            if(error || !latestEvent) {
-                setGpsStatus("No active events found");
+            if (!chosenEvent) {
+                setGpsStatus("Select an Event");
+                setGpsVerified(false);
                 setLoadingGps(false);
                 return;
             }
-        setTargetEvent(latestEvent); 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
+            
+             setTargetEvent(chosenEvent);
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
                 const distanceApart = getDistanceInMeters(
                     position.coords.latitude,
                     position.coords.longitude,
-                    latestEvent.latitude,
-                    latestEvent.longitude
+                    chosenEvent.latitude,
+                    chosenEvent.longitude
                 );
+
                 setCalculatedDistance(distanceApart);
-                if (distanceApart <= latestEvent.radius_meters) {
+
+                if (distanceApart <= chosenEvent.radius_meters) {
                     setGpsVerified(true);
-                    setGpsStatus(`Active Event: ${latestEvent.title} | Location: you are in range.`);
+                    setGpsStatus(`Active Event: ${chosenEvent.title} | Location: you are in range.`);
                     setLoadingGps(false);
                 } else {
                     setGpsVerified(false);
-                    setGpsStatus(`Active Event: ${latestEvent.title} | Location: Denied! You are ${Math.round(distanceApart - latestEvent.radius_meters)}m outside the area.`);
+                    setGpsStatus(`Active Event: ${chosenEvent.title} | Location: Denied! You are ${Math.round(distanceApart - chosenEvent.radius_meters)}m out of range.`);
                     setLoadingGps(false);
                 }
-            }
-            ,() => {
-                setGpsStatus("Unable to retrieve your location || Check your browser settings and allow location access.");
+                },
+                () => {
+                setGpsStatus("Unable to retrieve location || Check your browser settings and allow location access.");
                 setLoadingGps(false);
-            }, {enableHighAccuracy:true}
-        );
-        }
-        evaluateStudentRange();
-    }, []);
+                },
+                { enableHighAccuracy: true }
+            );
+    }
+
+    evaluateStudentRange();
+  }, [selectedEventId]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -245,29 +375,101 @@ return (
                 <h2 className="side-label">Student Login</h2>
                 <h2 className="card-section-title">Check in attendance</h2>
                 <div className='student-card'>
-                   <div className="login-header">
-                        <h1 className="login-title">Check in</h1>
-                        <p className="login-subtitle">This will be your attendance.</p>
+                    <div className="login-header">
+                            <h1 className="login-title">Check in</h1>
+                            <p className="login-subtitle">This will be your attendance.</p>
+                        </div>
+
+                        {!studentUser ? (
+                            <div className="google-auth-container">
+                                <p className="google-auth-prompt-text">
+                                    Sign in with your institutional account to verify your identity.
+                                </p>
+                                <button 
+                                    type="button" 
+                                    onClick={handleGoogleSignIn} 
+                                    className="login-submit-button google-sign-in-btn"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 18 18">
+                                        <path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.8H9v3.4h4.8c-.2 1.1-.8 2-1.8 2.6v2.2h2.9c1.7-1.6 2.7-4 2.7-6.6z"/>
+                                        <path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.8H.9v2.3C2.4 16 5.5 18 9 18z"/>
+                                        <path fill="#FBBC05" d="M3.9 10.7c-.2-.5-.3-1.1-.3-1.7s.1-1.2.3-1.7V5H.9C.3 6.2 0 7.6 0 9s.3 2.8.9 4l3-2.3z"/>
+                                        <path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.4 1.3l2.6-2.6C13.4 1 11.4 0 9 0 5.5 0 2.4 2 1 5.1l3 2.3c.7-2.2 2.7-3.8 9-3.6z"/>
+                                    </svg>
+                                    Sign In with OLFU Google Account
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleStudentCheckIn} className="input-form" onFocus={() => setActiveSide('left')}>
+                                
+                                <div className="verified-profile-badge">
+                                    Successfully logged in using: <br/>
+                                    <span className="verified-profile-email">{studentUser.email}</span>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Verified Student Email</label>
+                                    <input type="email" disabled className="login-input" style={{ backgroundColor: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: '500' }}value={studentUser.email || ''} />
+                                    <span className="settings-help-text" style={{ color: '#4ea03c', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                                        Identity securely logged via active Google Session credentials.
+                                    </span>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Select Active Event</label>
+                                    <select required className="login-input event-selector-select" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+                                        <option value="" disabled>-- Choose an ongoing event --</option>
+                                        {availableEvents
+                                            .filter(event => !completedEventIds.includes(event.id))
+                                            .map(event => (
+                                                <option key={event.id} value={event.id}>
+                                                     {event.title}
+                                                </option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+
+                                <div className="form-group attendance-toggle-row">
+                                    <label className="attendance-toggle-label">
+                                        <input type="radio"  name="logType" value="Check In" checked={attendanceType === 'Check In'} onChange={() => setAttendanceType('Check In')} className="attendance-toggle-radio"/> 
+                                        Check In
+                                    </label>
+                                    <label className="attendance-toggle-label">
+                                        <input type="radio" name="logType" value="Check Out" checked={attendanceType === 'Check Out'}  onChange={() => setAttendanceType('Check Out')}  className="attendance-toggle-radio"/> 
+                                        Check Out
+                                    </label>
+                                </div>
+                                <div className="gps-status-banner" style={gpsBannerStyle}>
+                                    {gpsStatus}
+                                </div>
+                                <button type="submit" className="login-submit-button" style={{ opacity: gpsVerified ? 1 : 0.5 }} disabled={!gpsVerified}>
+                                    Submit {attendanceType === 'Check In' ? 'Check-In' : 'Check-Out'} Log
+                                </button> 
+                                <div className="logout-btn-container">
+                                    <button 
+                                    type="button" className="student-logout-button"onClick={async () => {
+                                        try {
+                                            if (auth) {
+                                                await firebaseSignOut(auth);
+                                            }
+                                        } catch (error) {
+                                            console.error("Firebase de-authentication loop exception caught:", error);
+                                        } finally {
+                                            localStorage.clear();
+                                            sessionStorage.clear();
+                                            setStudentUser(null);
+                                            setStudentName('');
+                                            window.location.reload();
+                                        }
+                                    }}
+                                    >
+                                    Sign Out
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
-                    <form onSubmit={handleStudentCheckIn} className="input-form" onFocus={() => setActiveSide('left')}>
-                        <div className="form-group">
-                            <label className="form-label">Student ID</label>
-                            <input type="text" inputMode="numeric"maxLength={11} required placeholder="Enter Student ID" className="login-input" value={studentid || ''} 
-                                onChange={(e) => {
-                                    const cleanVal = e.target.value.replace(/\D/g, '');
-                                    setStudentId(cleanVal);
-                                }}/>
-                        </div>
-                        <div className="form-group">
-                            <label className='form-label'>Enter your name</label>
-                            <input type="text" required placeholder="Enter your name" className="login-input" value={studentname || ''} onChange={(e) => setStudentName(e.target.value)}/>
-                        </div>
-                        <button type="submit" className="login-submit-button" style={{ opacity: gpsVerified ? 1 : 0.5 }} disabled={!gpsVerified}> Check In </button> 
-                    </form>
-                </div>
-                <div className="gps-status-banner" style={gpsBannerStyle}>
-                    {gpsStatus}
-                </div>
             </div>
 
            <div className="content-col content-col-right">
