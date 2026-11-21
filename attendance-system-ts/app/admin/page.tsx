@@ -74,6 +74,8 @@ function AdmindashboardContent(){
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [showPassword, setShowPassword] = useState<boolean>(false);
     const [selectedAdminFilterEvent, setSelectedAdminFilterEvent] = useState<string>('OVERALL');
+    const [calibrationStatus, setCalibrationStatus] = useState<string>('');
+    const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
 
 
     const searchparams = useSearchParams();
@@ -511,30 +513,76 @@ return (
                                 </div>
                             </div>
 
-                            <button type="button" className="header-action-btn" style={{ width: '100%', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                onClick={() => {
-                                    if (!navigator.geolocation) return alert('Geolocation not supported.');
-                                    navigator.geolocation.getCurrentPosition(
-                                        (pos) => setForm({
-                                            ...form,
-                                            latitude: pos.coords.latitude.toString(),
-                                            longitude: pos.coords.longitude.toString()
-                                        }),
-                                        () => alert('Unable to get location.')
-                                    );
-                                }}
-                            >
-                                Calibrate Using My Current Location
-                            </button>
+                           <button
+                            type="button"
+                            disabled={isCalibrating}
+                            className="header-action-btn"
+                            style={{ width: '100%', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                            onClick={() => {
+                                if (!navigator.geolocation) {
+                                    return alert('Geolocation not supported.');
+                                }
+                        
+                                setIsCalibrating(true);
+                                setCalibrationStatus('Acquiring high-accuracy GPS lock...');
+                        
+                                let bestAccuracy = Infinity;
+                        
+                                const watchId = navigator.geolocation.watchPosition(
+                                    (pos) => {
+                                        const { latitude, longitude, accuracy } = pos.coords;
+                        
+                                        if (accuracy < bestAccuracy) {
+                                            bestAccuracy = accuracy;
+                                            setForm((prev) => ({
+                                                ...prev,
+                                                latitude: latitude.toFixed(7),
+                                                longitude: longitude.toFixed(7),
+                                            }));
+                                        }
+                        
+                                        if (accuracy <= 20) {
+                                            navigator.geolocation.clearWatch(watchId);
+                                            setIsCalibrating(false);
+                                            setCalibrationStatus(`Locked (±${Math.round(accuracy)}m accuracy)`);
+                                        } else {
+                                            setCalibrationStatus(
+                                                `Refining signal... current accuracy: ±${Math.round(accuracy)}m`
+                                            );
+                                        }
+                                    },
+                                    (err) => {
+                                        navigator.geolocation.clearWatch(watchId);
+                                        setIsCalibrating(false);
+                                        setCalibrationStatus('');
+                                        alert(`Unable to get location: ${err.message}`);
+                                    },
+                                    {
+                                        enableHighAccuracy: true,
+                                        maximumAge: 0,
+                                        timeout: 15000,
+                                    }
+                                );
+                        
+                                setTimeout(() => {
+                                    navigator.geolocation.clearWatch(watchId);
+                                    setIsCalibrating(false);
+                                    if (bestAccuracy > 50 && bestAccuracy !== Infinity) {
+                                        setCalibrationStatus(
+                                            `Warning: Low accuracy (±${Math.round(bestAccuracy)}m). Laptop Wi-Fi detected—use a phone GPS or paste Google Maps pin coordinates.`
+                                        );
+                                    }
+                                }, 10000);
+                            }}
+                        >
+                            {isCalibrating ? 'Calibrating GPS...' : 'Calibrate Using My Current Location'}
+                        </button>
 
-                            <div className="settings-field-group">
-                                <label className="settings-label">Target Radius Limit (Meters)</label>
-                                <input type="number" placeholder="50" required className="form-input" value={form.radius} onChange={e => setForm({ ...form, radius: e.target.value })}/>
-                            </div>
-
-                            <button type="submit" className="submit-button" style={{ marginTop: '16px' }}>
-                                Create Event 
-                            </button>
+{calibrationStatus && (
+    <p style={{ fontSize: '12px', marginBottom: '12px', color: calibrationStatus.startsWith('Warning') ? '#b91c1c' : '#065f46', fontWeight: 500 }}>
+        {calibrationStatus}
+    </p>
+)}
                         </form>
                     </div>
                     <div className="card-panel">
