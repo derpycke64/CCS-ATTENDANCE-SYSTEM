@@ -285,61 +285,74 @@ export default function LoginPage() {
     }, []);
     
     useEffect(() => {
-        async function evaluateStudentRange() {
-            setLoadingGps(true);
-            if (!selectedEventId) {
-                setGpsStatus("Please select a campus event to verify your location range.");
-                setGpsVerified(false);
-                setLoadingGps(false);
-                return;
-            }
-            if (!navigator.geolocation) {
-                setGpsStatus("Geolocation is not supported by your browser");
-                setLoadingGps(false);
-                return;
-            }
-            const chosenEvent = availableEvents.find(ev => ev.id === selectedEventId);
+  if (!selectedEventId) {
+    setGpsStatus("Please select a campus event to verify your location range.");
+    setGpsVerified(false);
+    setLoadingGps(false);
+    return;
+  }
 
-            if (!chosenEvent) {
-                setGpsStatus("Select an Event");
-                setGpsVerified(false);
-                setLoadingGps(false);
-                return;
-            }
-            
-             setTargetEvent(chosenEvent);
+  if (!navigator.geolocation) {
+    setGpsStatus("Geolocation is not supported by your browser.");
+    setLoadingGps(false);
+    return;
+  }
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                const distanceApart = getDistanceInMeters(
-                    position.coords.latitude,
-                    position.coords.longitude,
-                    chosenEvent.latitude,
-                    chosenEvent.longitude
-                );
+  const chosenEvent = availableEvents.find((ev) => ev.id === selectedEventId);
+  if (!chosenEvent) {
+    setGpsStatus("Loading event coordinates...");
+    setGpsVerified(false);
+    setLoadingGps(true);
+    return;
+  }
 
-                setCalculatedDistance(distanceApart);
+  setTargetEvent(chosenEvent);
+  setLoadingGps(true);
+  setGpsStatus("Acquiring high-accuracy GPS lock...");
 
-                if (distanceApart <= chosenEvent.radius_meters) {
-                    setGpsVerified(true);
-                    setGpsStatus(`Active Event: ${chosenEvent.title} | Location: you are in range.`);
-                    setLoadingGps(false);
-                } else {
-                    setGpsVerified(false);
-                    setGpsStatus(`Active Event: ${chosenEvent.title} | Location: Denied! You are ${Math.round(distanceApart - chosenEvent.radius_meters)}m out of range.`);
-                    setLoadingGps(false);
-                }
-                },
-                () => {
-                setGpsStatus("Unable to retrieve location || Check your browser settings and allow location access.");
-                setLoadingGps(false);
-                },
-                { enableHighAccuracy: true }
-            );
+  const watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude, accuracy } = position.coords;
+
+      const distanceApart = getDistanceInMeters(
+        latitude,
+        longitude,
+        Number(chosenEvent.latitude),
+        Number(chosenEvent.longitude)
+      );
+
+      setCalculatedDistance(distanceApart);
+      setLoadingGps(false);
+
+      // Account for GPS accuracy buffer (capped at e.g. 50m so bad Wi-Fi fixes don't bypass geofence)
+      const effectiveDistance = Math.max(0, distanceApart - Math.min(accuracy, 50));
+
+      if (effectiveDistance <= chosenEvent.radius_meters) {
+        setGpsVerified(true);
+        setGpsStatus(
+          `Active Event: ${chosenEvent.title} | In range (${Math.round(distanceApart)}m away, ±${Math.round(accuracy)}m accuracy).`
+        );
+      } else {
+        setGpsVerified(false);
+        setGpsStatus(
+          `Active Event: ${chosenEvent.title} | Denied! ${Math.round(distanceApart - chosenEvent.radius_meters)}m out of range (±${Math.round(accuracy)}m GPS accuracy).`
+        );
+      }
+    },
+    (error) => {
+      setLoadingGps(false);
+      setGpsVerified(false);
+      setGpsStatus(`Location error (${error.message}). Enable GPS/Location permissions.`);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 15000,
     }
+  );
 
-    evaluateStudentRange();
-  }, [selectedEventId]);
+  return () => navigator.geolocation.clearWatch(watchId);
+}, [selectedEventId, availableEvents]);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
