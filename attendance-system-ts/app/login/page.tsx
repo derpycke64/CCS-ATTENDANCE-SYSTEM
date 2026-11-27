@@ -220,6 +220,24 @@ export default function LoginPage() {
                     alert("You have already checked in for this event! Please select 'Check Out' if you are leaving.");
                     return; 
                 }
+            } else {
+                const { data: existingRecord, error: checkError } = await supabase
+                    .from('attendance')
+                    .select('checked_in_at, checked_out_at')
+                    .eq('student_email', studentUser.email)
+                    .eq('eventid', selectedEventId)
+                    .maybeSingle();
+
+                if (checkError) throw checkError;
+
+                if (!existingRecord || !existingRecord.checked_in_at) {
+                    alert("You haven't checked in for this event yet! Please Check In first.");
+                    return;
+                }
+                if (existingRecord.checked_out_at) {
+                    alert("You have already checked out of this event.");
+                    return;
+                }
             }
 
             const isCheckingIn = attendanceType === 'Check In';
@@ -343,7 +361,8 @@ export default function LoginPage() {
             try {
                 const { data, error } = await supabase
                     .from('events')
-                    .select('*');
+                    .select('*')
+                    .eq('is_active', true);
 
                 if (error) throw error;
                 if (data) setAvailableEvents(data);
@@ -396,6 +415,9 @@ export default function LoginPage() {
 
                 // Account for GPS accuracy buffer (capped at 50m so bad Wi-Fi fixes don't bypass geofence)
                 const effectiveDistance = Math.max(0, distanceApart - Math.min(accuracy, 50));
+                const weakSignalHint = accuracy > 100
+                    ? " Weak GPS signal (Wi-Fi/IP detected)—switch to a phone with mobile data/GPS."
+                    : "";
 
                 if (effectiveDistance <= chosenEvent.radius_meters) {
                     setGpsVerified(true);
@@ -405,7 +427,7 @@ export default function LoginPage() {
                 } else {
                     setGpsVerified(false);
                     setGpsStatus(
-                        `Active Event: ${chosenEvent.title} | Denied! ${Math.round(distanceApart - chosenEvent.radius_meters)}m out of range (±${Math.round(accuracy)}m GPS accuracy).`
+                        `Active Event: ${chosenEvent.title} | Denied! ${Math.round(distanceApart - chosenEvent.radius_meters)}m out of range (±${Math.round(accuracy)}m GPS accuracy).${weakSignalHint}`
                     );
                 }
             },
@@ -718,7 +740,7 @@ export default function LoginPage() {
                 <div className="footer-left-zone">
                     <p>© {new Date().getFullYear()} Our Lady of Fatima University. All Rights Reserved.</p>
                     <p className="footer-developer-credit">
-                        Developed by <span>CCS TechForge Society</span> (Developer: Westley Delos Santos & Sushane Vendiola; Frontend/UI Developer: Jul Arabani.)
+                        Developed by <span>CCS TechForge Society</span> (Westley Delos Santos & Sushane Vendiola)
                     </p>
                 </div>
                 <div className="footer-right-zone">
