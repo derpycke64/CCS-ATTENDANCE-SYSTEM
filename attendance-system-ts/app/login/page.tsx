@@ -719,6 +719,7 @@ export default function LoginPage() {
                     <p>© {new Date().getFullYear()} Our Lady of Fatima University. All Rights Reserved.</p>
                     <p className="footer-developer-credit">
                         Developed by <span>CCS TechForge Society</span> (Westley Delos Santos & Sushane Vendiola)
+                        UI thanks to Jul Haze.
                     </p>
                 </div>
                 <div className="footer-right-zone">
